@@ -1,0 +1,23 @@
+plugins {
+    id "java-library"
+    id "org.openjfx.javafxplugin" version "0.1.0"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // API should not depend on anything.
+}
+
+javafx {
+    // JavaFX 19 is compatible with Java 11 when using the plugin
+    version = "19.0.2.1"
+    modules = [ "javafx.controls" ]
+}

@@ -1,0 +1,9 @@
+.gradle/
+build/
+*.class
+*.jar
+*.war
+*.ear
+.vscode/
+.env
+local.properties

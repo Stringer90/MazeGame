@@ -1,0 +1,55 @@
+size (10,10)
+start (0,0)
+goal (9,1)
+
+item "Wooden Shield" {
+    at (8,8), (6,9)
+    message "This is a msg for shield."
+}
+
+item "Wooden Sword" {
+    at (5,5), (6,7)
+    message "This is a msg for sword."
+}
+
+item "Treasure Map" {
+    at (0,1)
+    message "Got treasure map!"
+}
+
+obstacle {
+    at (5,6), (6,8)
+    requires "Wooden Sword", "Wooden Shield"
+}
+
+obstacle {
+    at (8,9), (2,7)
+    requires "Wooden Sword"
+}
+
+plugin "edu.curtin.gameplugins.Teleport"
+plugin "edu.curtin.gameplugins.Penalty"
+plugin "edu.curtin.gameplugins.Reveal"
+
+script !{
+    from edu.curtin.saed.assignment2 import PluginInterface
+
+class RewardItemScript(PluginInterface):
+    def __init__(self):
+        self.moves = 0
+
+    def onAcquire(self):
+        self.moves += 1
+        self.checkReward()
+
+    def onObstacleTraversal(self):
+        self.moves += 1
+        self.checkReward()
+        
+    def checkReward(self):
+        if self.moves % 5 == 0:
+            api.addRewardItemToInventory("item.pickaxe", "This is msg for pickaxe.")
+
+listener = RewardItemScript()
+api.registerObstacleTraversalListener(listener)
+api.registerAcquireListener(listener)}

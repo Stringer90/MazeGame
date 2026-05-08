@@ -1,0 +1,57 @@
+plugins {
+    id "java"
+    id "application"
+    id "org.openjfx.javafxplugin" version "0.1.0"
+    id "com.intershop.gradle.javacc" version "4.1.3"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':api')
+    implementation project(':plugin-teleport')
+    implementation project(':plugin-penalty')
+    implementation project(':plugin-reveal')
+    implementation "org.python:jython-standalone:2.7.3"
+}
+
+application {
+    mainClass = "edu.curtin.saed.assignment2.App"
+}
+
+javafx {
+    // JavaFX 19 is compatible with Java 11 when using the plugin
+    version = "19.0.2.1"
+    modules = [ "javafx.controls" ]
+}
+
+javacc {
+    configs {
+        myparser {
+            inputFile = file("src/main/javacc/MyParser.jj")
+            packageName = "edu.curtin.saed.assignment2"
+        }
+    }
+}
+
+tasks.named("run") {
+    workingDir = rootProject.projectDir
+}
+
+tasks.register('install') {
+    dependsOn(tasks.named('installDist'))
+}
+
+// Keep warnings strict in the app too
+/*
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ["-Xlint:all,-serial"]
+}
+*/

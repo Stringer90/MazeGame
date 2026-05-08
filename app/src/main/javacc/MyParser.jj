@@ -1,0 +1,202 @@
+options {
+    STATIC = true;
+}
+
+PARSER_BEGIN(MyParser)
+
+package edu.curtin.saed.assignment2;
+
+import java.util.*;
+import java.io.*;
+
+import edu.curtin.saed.assignment2.TempItemData;
+import edu.curtin.saed.assignment2.TempObstacleData;
+
+public class MyParser {
+
+    private List<Integer> size = new ArrayList<Integer>();
+    private List<Integer> start = new ArrayList<Integer>();
+    private List<Integer> goal = new ArrayList<Integer>();
+
+    private List<TempItemData> itemsData = new ArrayList<TempItemData>();
+    private List<TempObstacleData> obstaclesData = new ArrayList<TempObstacleData>();
+
+    private List<String> plugins = new ArrayList<String>();
+    private List<String> scripts = new ArrayList<String>();
+
+    public List<Integer> getSize() { return size; }
+    public List<Integer> getStartPosition() { return start; }
+    public List<Integer> getGoal() { return goal; }
+    public List<TempItemData> getItems() { return itemsData; }
+    public List<TempObstacleData> getObstacles() { return obstaclesData; }
+    public List<String> getPlugins() { return plugins; }
+    public List<String> getScripts() { return scripts; }
+
+    public static MyParser parse(InputStream in, String encoding) throws IOException, ParseException {
+        MyParser mp = new MyParser(in, encoding);
+
+        parseGame(mp.size, mp.goal, mp.start, mp.itemsData, mp.obstaclesData, mp.plugins, mp.scripts);
+        return mp;
+    }
+
+    private static String toItemKey(String raw) {
+        String s = raw.toLowerCase().replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
+        return "item." + s;
+    }
+}
+
+PARSER_END(MyParser)
+
+SKIP : { " " | "\t" | "\n" | "\r" }
+
+TOKEN : {
+    < SIZE: "size" >
+  | < START: "start" >
+  | < GOAL: "goal" >
+  | < ITEM: "item" >
+  | < OBSTACLE: "obstacle" >
+  | < PLUGIN: "plugin" >
+  | < SCRIPT: "script" >
+  | < AT: "at" >
+  | < REQUIRES: "requires" >
+  | < MESSAGE: "message" >
+  | < INT: ("-")? (["0"-"9"])+ >
+  | < COMMA: "," >
+  | < LPAREN: "(" >
+  | < RPAREN: ")" >
+  | < LBRACE: "{" >
+  | < RBRACE: "}" >
+  | < BANG: "!" >
+  | < QUOTED_STRING: "\"" (~["\""])* "\"" >
+  | < SCRIPT_BODY: "!{" (~["}"])* "}" >
+}
+
+void parseGame(
+    List<Integer> size,
+    List<Integer> goal,
+    List<Integer> start,
+    List<TempItemData> itemsData,
+    List<TempObstacleData> obstaclesData,
+    List<String> plugins,
+    List<String> scripts
+) :
+{
+    Token x; Token y;
+    Token itemNameTok;
+    Token msgTok;
+    Token reqTok;
+    Token scriptTok;
+
+    List<List<Integer> > posList;
+    List<String> requiresList;
+
+    List<Integer> pos;
+    String raw;
+}
+{
+    (
+        <SIZE> <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+        {
+            size.clear();
+            size.add(Integer.parseInt(x.image));
+            size.add(Integer.parseInt(y.image));
+        }
+    |
+        <START> <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+        {
+            start.clear();
+            start.add(Integer.parseInt(x.image));
+            start.add(Integer.parseInt(y.image));
+        }
+    |
+        <GOAL> <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+        {
+            goal.clear();
+            goal.add(Integer.parseInt(x.image));
+            goal.add(Integer.parseInt(y.image));
+        }
+    |
+        <ITEM> itemNameTok=<QUOTED_STRING> <LBRACE>
+            <AT>
+            {
+                posList = new ArrayList<List<Integer> >();
+            }
+            <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+            {
+                pos = new ArrayList<Integer>();
+                pos.add(Integer.parseInt(x.image));
+                pos.add(Integer.parseInt(y.image));
+                posList.add(pos);
+            }
+            (
+              <COMMA> <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+              {
+                  pos = new ArrayList<Integer>();
+                  pos.add(Integer.parseInt(x.image));
+                  pos.add(Integer.parseInt(y.image));
+                  posList.add(pos);
+              }
+            )*
+            <MESSAGE> msgTok=<QUOTED_STRING>
+        <RBRACE>
+        {
+            String rawName = itemNameTok.image.substring(1, itemNameTok.image.length()-1);
+            String i18nKey = MyParser.toItemKey(rawName);
+            String message = msgTok.image.substring(1, msgTok.image.length()-1);
+            itemsData.add(new TempItemData(i18nKey, posList, message));
+        }
+    |
+        <OBSTACLE> <LBRACE>
+            <AT>
+            {
+                posList = new ArrayList<List<Integer> >();
+            }
+            <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+            {
+                pos = new ArrayList<Integer>();
+                pos.add(Integer.parseInt(x.image));
+                pos.add(Integer.parseInt(y.image));
+                posList.add(pos);
+            }
+            (
+              <COMMA> <LPAREN> x=<INT> <COMMA> y=<INT> <RPAREN>
+              {
+                  pos = new ArrayList<Integer>();
+                  pos.add(Integer.parseInt(x.image));
+                  pos.add(Integer.parseInt(y.image));
+                  posList.add(pos);
+              }
+            )*
+            <REQUIRES>
+            {
+                requiresList = new ArrayList<String>();
+            }
+            reqTok=<QUOTED_STRING>
+            {
+                raw = reqTok.image.substring(1, reqTok.image.length()-1);
+                requiresList.add(MyParser.toItemKey(raw));
+            }
+            ( <COMMA> reqTok=<QUOTED_STRING>
+              {
+                raw = reqTok.image.substring(1, reqTok.image.length()-1);
+                requiresList.add(MyParser.toItemKey(raw));
+              }
+            )*
+        <RBRACE>
+        {
+            obstaclesData.add(new TempObstacleData(posList, requiresList));
+        }
+    |
+        <PLUGIN> itemNameTok=<QUOTED_STRING>
+        {
+            plugins.add(itemNameTok.image.substring(1, itemNameTok.image.length()-1));
+        }
+    |
+        <SCRIPT> scriptTok=<SCRIPT_BODY>
+        {
+            String body = scriptTok.image.substring(2, scriptTok.image.length()-1).stripLeading();
+            scripts.add(body);
+        }
+    )*
+    <EOF>
+}
