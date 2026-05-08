@@ -4,6 +4,7 @@ build/
 *.jar
 *.war
 *.ear
+/bin
 .vscode/
 .env
 local.properties
